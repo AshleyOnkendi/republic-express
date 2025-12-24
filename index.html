@@ -11,16 +11,12 @@
 <body>
 
     <div class="hero">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div style="display:flex; justify-content:space-between;">
             <div>
                 <h1>Republic <span class="hero-brand">Express</span></h1>
                 <p>Premium coffee, crafted for you.</p>
             </div>
-            
-            <div class="top-cart-btn" onclick="openCheckout()">
-                <span style="font-size:20px;">🛍️</span>
-                <span id="top-cart-badge" class="badge-pop">0</span>
-            </div>
+            <a href="login.html" style="opacity:0.2; text-decoration:none; color:white; font-size:20px;">☕</a>
         </div>
     </div>
 
@@ -92,48 +88,38 @@
         </div>
     </div>
 
-    <div style="text-align:center; padding:20px; opacity:0.3;">
-        <a href="login.html" style="text-decoration:none; color:#999; font-size:12px;">Staff Login</a>
-    </div>
-
     <script src="script.js"></script>
     <script>
-        // Override Update Function to update BOTH carts (Top and Bottom)
+        // Override the cart update to handle the animation class
         const originalUpdateCart = updateCartIcon;
         updateCartIcon = function() {
             const totalEl = document.getElementById('cart-total');
-            const bottomBadge = document.getElementById('cart-count-badge');
-            const topBadge = document.getElementById('top-cart-badge'); // New Top Badge
+            const countEl = document.getElementById('cart-count-badge');
             const bar = document.getElementById('cart-bar');
             
             const total = cart.reduce((sum, item) => sum + item.price, 0);
-            const count = cart.length;
             
             if (totalEl) totalEl.innerText = total.toLocaleString();
-            if (bottomBadge) bottomBadge.innerText = count;
-            if (topBadge) {
-                topBadge.innerText = count;
-                // Animation pop effect
-                topBadge.style.transform = "scale(1.2)";
-                setTimeout(() => topBadge.style.transform = "scale(1)", 200);
-            }
+            if (countEl) countEl.innerText = cart.length;
             
-            // Bottom bar logic
-            if(count > 0) {
-                bar.style.display = 'flex';
+            if(cart.length > 0) {
+                bar.style.display = 'flex'; // Ensure it's in the DOM
+                // Small delay to allow CSS transition to catch the display change
                 setTimeout(() => bar.classList.add('visible'), 10);
             } else {
                 bar.classList.remove('visible');
             }
         }
         
+        // Modal Logic Overrides for Animation
         const originalOpenCheckout = openCheckout;
         openCheckout = function() {
             if (cart.length === 0) return alert("Cart is empty!");
             const modal = document.getElementById('checkout-modal');
             modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('open'), 10);
+            setTimeout(() => modal.classList.add('open'), 10); // Trigger CSS fade/slide
             
+            // Populate data
             document.getElementById('modal-total').innerText = cart.reduce((sum, item) => sum + item.price, 0).toLocaleString();
             document.getElementById('order-summary').innerHTML = cart.map(item => `
                 <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f5f5f5; padding-bottom:8px;">
@@ -149,7 +135,7 @@
         closeCheckout = function() {
             const modal = document.getElementById('checkout-modal');
             modal.classList.remove('open');
-            setTimeout(() => modal.style.display = 'none', 300);
+            setTimeout(() => modal.style.display = 'none', 300); // Wait for animation
         }
     </script>
 </body>
