@@ -94,7 +94,7 @@
                     <span>Total:</span> <span id="pos-total">KES 0</span>
                 </div>
                 <select id="pos-staff-select" class="staff-select" style="margin-bottom:10px;">
-                    <option value="">Select Who Took This Order...</option>
+                    <option value="">Loading Staff...</option>
                 </select>
                 <button class="btn btn-brew" onclick="submitPOS()">💵 CONFIRM PAYMENT</button>
             </div>
@@ -139,11 +139,21 @@
         const user = JSON.parse(localStorage.getItem('republic_user'));
         if (!user || user.role !== 'barista') window.location.href = 'login.html';
 
-        function startShift() {
+        // --- FIXED: ASYNC STARTUP TO PREVENT EMPTY LISTS ---
+        async function startShift() {
             const audio = document.getElementById('audio-new-order');
             audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => console.log(e));
+            
             document.getElementById('interaction-overlay').style.display = 'none';
-            initRealtime(); loadOrders(); loadMenuForPOS(); loadStaff();
+            initRealtime();
+            
+            // 1. Load Staff FIRST (Wait for it)
+            await loadStaff();
+            
+            // 2. THEN Load Orders (So they have the list ready)
+            loadOrders(); 
+            loadMenuForPOS();
+            
             setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
         }
 
@@ -157,11 +167,22 @@
 
         // --- LOAD STAFF ---
         async function loadStaff() {
-            const { data } = await db.from('users').select('username').in('role', ['barista', 'owner']);
-            if (data) {
+            console.log("Loading staff...");
+            const { data, error } = await db.from('users').select('username'); // Fetch ALL users to be safe
+            
+            if (data && data.length > 0) {
                 staffList = data.map(u => u.username);
-                const posSelect = document.getElementById('pos-staff-select');
-                posSelect.innerHTML = '<option value="">Select Who Took This Order...</option>' + staffList.map(name => `<option value="${name}">${name}</option>`).join('');
+                console.log("Staff found:", staffList);
+            } else {
+                console.log("No staff found via DB, using default.");
+                staffList = ['Owner']; // Fallback so dropdown isn't empty
+            }
+
+            // Update POS Dropdown immediately
+            const posSelect = document.getElementById('pos-staff-select');
+            if(posSelect) {
+                posSelect.innerHTML = '<option value="">Select Who Took This Order...</option>' + 
+                    staffList.map(name => `<option value="${name}">${name}</option>`).join('');
             }
         }
 
@@ -188,10 +209,15 @@
 
             const itemsHtml = order.items.map(i => `<div><div style="font-weight:bold;">1x ${i.name}</div><span style="font-size:12px; color:var(--meta-color);">${i.details || ''}</span></div>`).join('');
 
-            // Staff Selector on Card
-            let staffSelectorHtml = order.handled_by 
-                ? `<div style="color:#ffcc00; font-size:12px; margin-bottom:10px;">Handled by: <b>${order.handled_by}</b></div>` 
-                : `<select id="staff-select-${order.id}" class="staff-select"><option value="">Select Your Name...</option>${staffList.map(name => `<option value="${name}">${name}</option>`).join('')}</select>`;
+            // Staff Selector logic
+            let staffSelectorHtml = '';
+            if (order.handled_by) {
+                staffSelectorHtml = `<div style="color:#ffcc00; font-size:12px; margin-bottom:10px;">Handled by: <b>${order.handled_by}</b></div>`;
+            } else {
+                // If staffList is somehow empty (network error), fallback to "Unknown"
+                const options = staffList.length > 0 ? staffList.map(name => `<option value="${name}">${name}</option>`).join('') : '<option value="Owner">Owner</option>';
+                staffSelectorHtml = `<select id="staff-select-${order.id}" class="staff-select"><option value="">Select Your Name...</option>${options}</select>`;
+            }
 
             let btnHtml = '';
             if (isUnpaid) {
@@ -209,7 +235,10 @@
         async function updateStatus(id, status) {
             const selectEl = document.getElementById(`staff-select-${id}`);
             let handlerName = null;
-            if (selectEl) { if (selectEl.value === "") return alert("Please select your name first!"); handlerName = selectEl.value; }
+            if (selectEl) { 
+                if (selectEl.value === "") return alert("Please select your name first!"); 
+                handlerName = selectEl.value; 
+            }
             
             let updateData = { status: status };
             if (handlerName) updateData.handled_by = handlerName;
@@ -238,7 +267,7 @@
             else { posCart.push({ id: item.id, name: item.name, price: item.price, details: '' }); updatePOSDisplay(); }
         }
 
-        // --- ADD-ON LOGIC (TOGGLE FIXED) ---
+        // --- TOGGLE ADDONS (FIXED) ---
         function openAddonModal(item) {
             selectedItem = item; selectedAddons = {};
             document.getElementById('addon-title').innerText = "Customize " + item.name;
@@ -250,12 +279,10 @@
                     const btn = document.createElement('button'); btn.className = 'opt-btn'; 
                     btn.innerText = opt.price > 0 ? `${opt.name} (+${opt.price})` : opt.name;
                     
-                    // TOGGLE LOGIC
+                    // TOGGLE CLICK
                     btn.onclick = function() {
                         const isSelected = this.classList.contains('selected');
-                        // Reset siblings
                         groupDiv.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
-                        
                         if (!isSelected) {
                             this.classList.add('selected');
                             selectedAddons[group.name] = { name: opt.name, price: opt.price };
