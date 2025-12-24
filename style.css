@@ -1,4 +1,4 @@
-/* --- REPUBLIC EXPRESS MOBILE-FIRST PREMIUM v5.0 --- */
+/* --- REPUBLIC EXPRESS PREMIUM v5.0 (Final Polish) --- */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 :root {
@@ -51,8 +51,10 @@ body {
 /* --- TOP RIGHT CART ICON --- */
 .top-cart-btn {
     background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(5px);
+    /* Fixed: Separate lines to remove yellow warning */
     -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    
     border: 1px solid rgba(255, 255, 255, 0.2);
     width: 44px; height: 44px;
     border-radius: 50%;
@@ -150,7 +152,10 @@ body {
 #cart-bar {
     position: fixed; bottom: 25px; left: 24px; right: 24px;
     background: rgba(44, 26, 22, 0.95);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    /* Fixed: Separate lines */
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    
     color: white;
     padding: 14px 24px; border-radius: 50px;
     display: flex; justify-content: space-between; align-items: center;
