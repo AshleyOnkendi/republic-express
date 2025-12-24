@@ -1,0 +1,245 @@
+/* Toggle Buttons for Takeaway vs Dine-In */
+.toggle-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #666;
+    transition: 0.2s;
+}
+.toggle-btn.active {
+    background: #3e2723;
+    color: #ffcc00;
+    border-color: #3e2723;
+}
+:root {
+    --primary: #3e2723;
+    --accent: #ffcc00;
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #2d3436;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', sans-serif; /* Modern font stack */
+    margin: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding-bottom: 100px; /* Space for cart */
+    -webkit-font-smoothing: antialiased;
+}
+
+/* HEADER */
+header {
+    background: var(--primary);
+    color: white;
+    padding: 20px 20px 10px 20px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+header h1 { margin: 0; font-size: 22px; font-weight: 800; }
+header p { margin: 5px 0 0; opacity: 0.8; font-size: 13px; }
+
+/* CATEGORY TABS */
+#category-tabs {
+    display: flex;
+    gap: 12px;
+    padding: 15px 20px;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: var(--primary); /* Keep it dark to blend with header */
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+}
+#category-tabs::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
+
+.cat-btn {
+    padding: 8px 18px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.1);
+    border-radius: 30px;
+    font-size: 13px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.cat-btn.active {
+    background: var(--accent);
+    color: var(--primary);
+    border-color: var(--accent);
+    font-weight: 800;
+    box-shadow: 0 4px 10px rgba(255, 204, 0, 0.3);
+}
+
+/* MENU GRID (RESPONSIVE MAGIC) */
+#menu-container {
+    padding: 20px;
+    display: grid;
+    /* Phones: 1 column, Tablets: 2 cols, Laptops: 3 cols, Desktops: 4 cols */
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (min-width: 600px) {
+    #menu-container {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+    }
+}
+
+/* MENU CARD */
+.menu-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    cursor: pointer;
+    height: 100%;
+}
+
+.menu-card:active { transform: scale(0.98); }
+
+/* Aspect Ratio Image Wrapper */
+.card-img-wrapper {
+    width: 100%;
+    padding-top: 65%; /* This forces a 16:10 aspect ratio */
+    position: relative;
+    background: #eee;
+}
+
+.card-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-details {
+    padding: 12px 15px;
+    flex: 1; /* Pushes content to fill height */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card-details h3 {
+    margin: 0 0 5px 0;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.price { font-weight: 800; color: var(--text-color); font-size: 14px; }
+
+.add-btn {
+    background: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid #ddd;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* SALE BADGE */
+.sale-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #ff4757;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(255,71,87,0.4);
+    z-index: 2;
+}
+.old-price { text-decoration: line-through; color: #b2bec3; font-size: 11px; margin-right: 5px; }
+
+/* STICKY CART BAR */
+#cart-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    background: #2d3436;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 200;
+    backdrop-filter: blur(10px);
+}
+
+#cart-bar button {
+    background: var(--accent);
+    color: var(--primary);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+/* CHECKOUT MODAL */
+#checkout-modal {
+    display: none;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    align-items: flex-end; /* Slide up from bottom on mobile */
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    padding: 30px;
+    border-radius: 20px 20px 0 0; /* Rounded top only */
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease-out;
+}
+
+@media (min-width: 600px) {
+    #checkout-modal { align-items: center; }
+    .modal-content { border-radius: 20px; width: 400px; }
+}
+
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+/* PRODUCT PAGE OVERRIDES */
+.hero-img { width: 100%; height: 300px; object-fit: cover; border-radius: 0 0 20px 20px; }
+.p-container { padding: 25px; max-width: 600px; margin: 0 auto; }
+.main-action-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 30px; }

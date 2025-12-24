@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Login | Republic Express</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #222;
+            color: white;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .login-card {
+            background: #333;
+            padding: 40px;
+            border-radius: 15px;
+            width: 300px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid #444;
+        }
+        h2 { color: #ffcc00; margin-bottom: 30px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #444;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #ffcc00;
+            color: #000;
+            border: none;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #e6b800; }
+        .error { color: #ff4444; margin-top: 15px; font-size: 14px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>🔒 Staff Portal</h2>
+        <input type="text" id="username" placeholder="Username (e.g. barista)">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleLogin()" id="login-btn">Login</button>
+        <p class="error" id="error-msg">Invalid credentials</p>
+    </div>
+
+    <script>
+        const PROJECT_URL = "https://uveudhkfncwbllczhbhf.supabase.co";
+        const PROJECT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2ZXVkaGtmbmN3YmxsY3poYmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NTE5MTksImV4cCI6MjA4MjEyNzkxOX0.30rZbjVgShWxeI5FOD8zGJU-Ho6h6d5s7foEIlQVSZI";
+        const db = supabase.createClient(PROJECT_URL, PROJECT_KEY);
+
+        async function handleLogin() {
+            const user = document.getElementById('username').value.toLowerCase();
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('login-btn');
+            const err = document.getElementById('error-msg');
+
+            btn.innerText = "Checking...";
+            err.style.display = 'none';
+
+            try {
+                // Check database for match
+                const { data, error } = await db
+                    .from('users')
+                    .select('*')
+                    .eq('username', user)
+                    .eq('password', pass)
+                    .single();
+
+                if (error || !data) {
+                    throw new Error("Wrong username or password");
+                }
+
+                // Success! Save session and Redirect based on Role
+                localStorage.setItem('republic_user', JSON.stringify(data));
+                
+                if (data.role === 'barista') {
+                    window.location.href = 'barista.html';
+                } else if (data.role === 'owner') {
+                    window.location.href = 'owner.html';
+                }
+
+            } catch (e) {
+                err.innerText = "Access Denied: " + e.message;
+                err.style.display = 'block';
+                btn.innerText = "Login";
+            }
+        }
+    </script>
+</body>
+</html>

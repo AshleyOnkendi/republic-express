@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customize | Republic Express</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="background:#fff;">
+
+    <button onclick="window.location.href='index.html'" style="position:absolute; top:20px; left:20px; background:white; border:none; width:40px; height:40px; border-radius:50%; box-shadow:0 4px 10px rgba(0,0,0,0.1); font-size:20px; cursor:pointer; z-index:10;">&#8592;</button>
+
+    <img id="product-img" class="hero-img" src="" alt="Coffee">
+
+    <main class="p-container">
+        
+        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+            <h1 id="product-name" style="margin:0; font-size:28px; color:#2d3436;">Loading...</h1>
+            <div style="text-align:right;">
+                <span id="product-old-price" style="display:block; text-decoration:line-through; color:#aaa; font-size:14px;"></span>
+                <span id="base-price" style="font-size:24px; font-weight:800; color:#3e2723;">...</span>
+            </div>
+        </div>
+
+        <p id="product-desc" style="color:#636e72; font-size:15px; line-height:1.6; margin-bottom:30px;"></p>
+
+        <div id="dynamic-addons"></div>
+
+        <button id="add-to-order-btn" onclick="addToOrder()" class="main-action-btn">
+            Add to Order • KES <span id="dynamic-total">0</span>
+        </button>
+
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>

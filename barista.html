@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barista POS | Republic Express</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg-color: #1a1a1a; --text-color: #eee; --card-bg: #2d2d2d; --border-color: #444; --header-border: #333; --btn-text: white; --meta-color: #aaa; }
+        body.light-mode { --bg-color: #f4f4f4; --text-color: #333; --card-bg: #ffffff; --border-color: #ddd; --header-border: #ddd; --btn-text: #333; --meta-color: #666; }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: background 0.3s, color 0.3s; }
+        
+        /* OVERLAYS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; }
+        #interaction-overlay { z-index: 9999; display: flex; flex-direction: column; } 
+        
+        .start-btn { padding: 20px 50px; font-size: 24px; font-weight: bold; background: #ffcc00; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 0 30px rgba(255, 204, 0, 0.4); animation: pulse 2s infinite; color: black; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* HEADER */
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--header-border); padding-bottom: 20px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        h1 { margin: 0; color: #ffcc00; font-size: 24px; }
+        .header-controls { display: flex; gap: 10px; }
+        .action-btn { background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 10px 15px; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        .pos-btn { background: #25D366; color: white; border: none; }
+
+        /* ORDERS GRID */
+        #orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .order-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left: 5px solid transparent; position: relative; }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; color: var(--meta-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .time-badge { background: var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+        
+        .status-received { border-left-color: #ffcc00; }
+        .status-brewing { border-left-color: #25D366; }
+        .status-ready { border-left-color: white; }
+        
+        .unpaid-overlay { position: absolute; top: 10px; right: 10px; background: red; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; animation: flash 1s infinite; }
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .actions { margin-top: 15px; display: grid; gap: 10px; }
+        .btn { padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
+        .btn-brew { background: #ffcc00; color: #000; }
+        .btn-ready { background: #25D366; color: white; }
+        .btn-done { background: var(--border-color); color: var(--meta-color); border: 1px solid var(--meta-color); }
+        .btn-pay { background: #333; color: white; border: 1px solid white; }
+
+        /* STAFF SELECTOR (NEW) */
+        .staff-select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ffcc00; background: var(--bg-color); color: var(--text-color); margin-bottom: 10px; font-weight: bold; }
+
+        /* POS MODAL */
+        .pos-content { background: var(--card-bg); width: 800px; max-width: 95%; height: 85vh; padding: 20px; border-radius: 10px; display: flex; flex-direction: column; }
+        #pos-menu { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 15px; }
+        .pos-item { border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; overflow: hidden; background: var(--bg-color); transition: 0.2s; }
+        .pos-item:active { transform: scale(0.95); border-color: #ffcc00; }
+        .pos-img { width: 100%; height: 100px; object-fit: cover; }
+        .pos-details { padding: 10px; text-align: center; }
+        .pos-name { font-weight: bold; font-size: 14px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* ADD-ON MODAL */
+        #addon-modal { z-index: 6000; } 
+        .addon-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 400px; max-width: 90%; }
+        .opt-group { margin-bottom: 15px; }
+        .opt-title { font-weight: bold; margin-bottom: 5px; color: #ffcc00; }
+        .opt-btn { padding: 8px 12px; margin: 0 5px 5px 0; border: 1px solid var(--border-color); background: transparent; color: var(--text-color); border-radius: 20px; cursor: pointer; transition: 0.2s; }
+        .opt-btn:hover { background: rgba(255,204,0,0.2); }
+        .opt-btn.selected { background: #ffcc00; color: black; border-color: #ffcc00; font-weight: bold; }
+
+        .pos-footer { margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+
+        @media (max-width: 600px) { #orders-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <audio id="audio-new-order"><source src="https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3" type="audio/mpeg"></audio>
+
+    <div id="interaction-overlay" class="modal-overlay" style="display:flex;">
+        <h1 style="color:white; margin-bottom:20px;">☕ Kitchen Display</h1>
+        <button class="start-btn" onclick="startShift()">🔔 START SHIFT</button>
+    </div>
+
+    <div id="pos-modal" class="modal-overlay">
+        <div class="pos-content">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="margin:0;">New Walk-In Order</h2>
+                <button onclick="closePOS()" style="background:none; border:none; color:red; font-size:28px; cursor:pointer;">×</button>
+            </div>
+            <div id="pos-menu">Loading menu...</div>
+            <div class="pos-footer">
+                <div id="pos-cart-list" style="max-height: 100px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; color: var(--meta-color);">Cart empty</div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:18px; margin-bottom:10px;">
+                    <span>Total:</span> <span id="pos-total">KES 0</span>
+                </div>
+                <select id="pos-staff-select" class="staff-select" style="margin-bottom:10px;">
+                    <option value="">Select Who Took This Order...</option>
+                </select>
+                <button class="btn btn-brew" onclick="submitPOS()">💵 CONFIRM PAYMENT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addon-modal" class="modal-overlay">
+        <div class="addon-content">
+            <h3 id="addon-title" style="margin-top:0;">Customize</h3>
+            <div id="addon-options"></div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn btn-ready" style="flex:1" onclick="confirmAddons()">Add Item</button>
+                <button class="btn" style="background:transparent; color:#888; flex:1" onclick="closeAddons()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div><h1>☕ Barista Station</h1><span id="clock" style="color:#888; font-size:14px;">Shift Not Started</span></div>
+        <div class="header-controls">
+            <button class="action-btn pos-btn" onclick="openPOS()">+ Walk-In</button>
+            <button class="action-btn" onclick="toggleTheme()" id="theme-btn">☀️ Light Mode</button>
+            <button class="action-btn" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <div id="orders-grid"><p style="color:#888;">Waiting for shift start...</p></div>
+
+    <script>
+        const PROJECT_URL = "https://uveudhkfncwbllczhbhf.supabase.co";
+        const PROJECT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2ZXVkaGtmbmN3YmxsY3poYmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NTE5MTksImV4cCI6MjA4MjEyNzkxOX0.30rZbjVgShWxeI5FOD8zGJU-Ho6h6d5s7foEIlQVSZI";
+        const db = supabase.createClient(PROJECT_URL, PROJECT_KEY);
+        
+        let menuItems = []; 
+        let posCart = [];
+        let staffList = []; // Stores barista names
+        let selectedItem = null;
+        let selectedAddons = {};
+        
+        const PLACEHOLDER_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+        const user = JSON.parse(localStorage.getItem('republic_user'));
+        if (!user || user.role !== 'barista') window.location.href = 'login.html';
+
+        function startShift() {
+            const audio = document.getElementById('audio-new-order');
+            audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => console.log(e));
+            document.getElementById('interaction-overlay').style.display = 'none';
+            initRealtime(); loadOrders(); loadMenuForPOS(); loadStaff();
+            setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('barista_theme', isLight ? 'light' : 'dark');
+            document.getElementById('theme-btn').innerText = isLight ? "🌙 Dark Mode" : "☀️ Light Mode";
+        }
+        if (localStorage.getItem('barista_theme') === 'light') { document.body.classList.add('light-mode'); document.getElementById('theme-btn').innerText = "🌙 Dark Mode"; }
+
+        // --- NEW: LOAD STAFF FROM DB ---
+        async function loadStaff() {
+            // Get all users who are baristas (or owner) to populate the list
+            const { data } = await db.from('users').select('username').in('role', ['barista', 'owner']);
+            if (data) {
+                staffList = data.map(u => u.username);
+                // Populate POS dropdown immediately
+                const posSelect = document.getElementById('pos-staff-select');
+                posSelect.innerHTML = '<option value="">Select Who Took This Order...</option>' + 
+                    staffList.map(name => `<option value="${name}">${name}</option>`).join('');
+            }
+        }
+
+        // --- ORDERS GRID ---
+        async function loadOrders() {
+            const { data } = await db.from('orders').select('*').neq('status', 'completed').order('created_at', { ascending: true });
+            const grid = document.getElementById('orders-grid');
+            grid.innerHTML = "";
+            if(!data || data.length === 0) { grid.innerHTML = "<p style='color:var(--meta-color)'>No active orders. 🧹</p>"; return; }
+            data.forEach(renderCard);
+        }
+
+        function renderCard(order) {
+            const grid = document.getElementById('orders-grid');
+            const card = document.createElement('div');
+            card.className = `order-card status-${order.status}`;
+            
+            const isUnpaid = order.payment_status === 'pending';
+            const unpaidBadge = isUnpaid ? `<div class="unpaid-overlay">💰 COLLECT CASH</div>` : '';
+            
+            let locationBadge = order.order_type === 'dine_in' 
+                ? `<div style="background:#ffcc00; color:black; padding:5px 10px; font-weight:800; border-radius:4px; display:inline-block; margin-bottom:10px;">📍 TABLE ${order.table_number || '?'}</div>`
+                : `<div style="background:#eee; color:#333; padding:5px 10px; font-weight:800; border-radius:4px; display:inline-block; margin-bottom:10px;">📦 TAKEAWAY</div>`;
+
+            const itemsHtml = order.items.map(i => `<div><div style="font-weight:bold;">1x ${i.name}</div><span style="font-size:12px; color:var(--meta-color);">${i.details || ''}</span></div>`).join('');
+
+            // --- STAFF SELECTOR FOR EACH CARD ---
+            // If already handled by someone, show their name. If not, show dropdown.
+            let staffSelectorHtml = '';
+            if (order.handled_by) {
+                staffSelectorHtml = `<div style="color:#ffcc00; font-size:12px; margin-bottom:10px;">Handled by: <b>${order.handled_by}</b></div>`;
+            } else {
+                staffSelectorHtml = `<select id="staff-select-${order.id}" class="staff-select">
+                    <option value="">Select Your Name...</option>
+                    ${staffList.map(name => `<option value="${name}">${name}</option>`).join('')}
+                </select>`;
+            }
+
+            let btnHtml = '';
+            if (isUnpaid) {
+                btnHtml = `<button class="btn btn-pay" onclick="markPaid(${order.id})">CONFIRM CASH RECEIVED 💵</button>`;
+            } else {
+                if (order.status === 'received') btnHtml = `<button class="btn btn-brew" onclick="updateStatus(${order.id}, 'brewing')">START BREWING ☕</button>`;
+                else if (order.status === 'brewing') btnHtml = `<button class="btn btn-ready" onclick="updateStatus(${order.id}, 'ready')">MARK READY ✅</button>`;
+                else if (order.status === 'ready') btnHtml = `<button class="btn btn-done" onclick="updateStatus(${order.id}, 'completed')">PICKED UP (Archive)</button>`;
+            }
+
+            card.innerHTML = `
+                ${unpaidBadge}
+                <div class="card-header"><span>#${order.id}</span><span class="time-badge">${new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
+                ${locationBadge}
+                ${staffSelectorHtml}
+                <div style="margin-bottom:15px;">${itemsHtml}</div>
+                <div style="font-size:12px; color:var(--meta-color); margin-bottom:15px;">Cust: ${order.customer_phone || 'Walk-in'}</div>
+                <div class="actions">${btnHtml}</div>
+            `;
+            grid.appendChild(card);
+        }
+
+        async function updateStatus(id, status) {
+            // Check if staff is selected
+            const selectEl = document.getElementById(`staff-select-${id}`);
+            let handlerName = null;
+            
+            if (selectEl) {
+                if (selectEl.value === "") return alert("Please select your name first!");
+                handlerName = selectEl.value;
+            }
+
+            // Update DB
+            let updateData = { status: status };
+            if (handlerName) updateData.handled_by = handlerName;
+
+            await db.from('orders').update(updateData).eq('id', id);
+            loadOrders(); 
+        }
+
+        async function markPaid(id) { if(confirm("Cash received?")) { await db.from('orders').update({ payment_status: 'paid' }).eq('id', id); loadOrders(); } }
+        function logout() { localStorage.removeItem('republic_user'); window.location.href = 'login.html'; }
+
+        // --- POS FUNCTIONS ---
+        async function loadMenuForPOS() { const { data } = await db.from('menu_items').select('*').eq('is_available', true); menuItems = data; }
+        function openPOS() { document.getElementById('pos-modal').style.display = 'flex'; posCart = []; updatePOSDisplay(); renderPOSMenu(); }
+        function closePOS() { document.getElementById('pos-modal').style.display = 'none'; }
+
+        function renderPOSMenu() {
+            const container = document.getElementById('pos-menu');
+            container.innerHTML = menuItems.map(item => {
+                const img = item.image_url || PLACEHOLDER_IMG;
+                return `<div class="pos-item" onclick='clickPOSItem(${JSON.stringify(item)})'><img src="${img}" class="pos-img"><div class="pos-details"><div class="pos-name">${item.name}</div><div style="font-size:12px; font-weight:bold;">${item.price}</div></div></div>`;
+            }).join('');
+        }
+
+        function clickPOSItem(item) {
+            if (item.addons && Array.isArray(item.addons) && item.addons.length > 0) openAddonModal(item);
+            else { posCart.push({ id: item.id, name: item.name, price: item.price, details: '' }); updatePOSDisplay(); }
+        }
+
+        function openAddonModal(item) {
+            selectedItem = item; selectedAddons = {};
+            document.getElementById('addon-title').innerText = "Customize " + item.name;
+            const container = document.getElementById('addon-options'); container.innerHTML = "";
+            item.addons.forEach((group, gIndex) => {
+                const groupDiv = document.createElement('div'); groupDiv.className = 'opt-group'; groupDiv.innerHTML = `<div class="opt-title">${group.name}</div>`;
+                group.options.forEach((opt, oIndex) => {
+                    const btn = document.createElement('button'); btn.className = 'opt-btn'; btn.innerText = opt.price > 0 ? `${opt.name} (+${opt.price})` : opt.name;
+                    btn.onclick = function() { groupDiv.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); this.classList.add('selected'); selectedAddons[group.name] = { name: opt.name, price: opt.price }; };
+                    groupDiv.appendChild(btn);
+                });
+                container.appendChild(groupDiv);
+            });
+            document.getElementById('addon-modal').style.display = 'flex';
+        }
+
+        function confirmAddons() {
+            let totalAddonPrice = 0; let detailsArr = [];
+            Object.keys(selectedAddons).forEach(key => { const opt = selectedAddons[key]; totalAddonPrice += opt.price; detailsArr.push(`${key}: ${opt.name}`); });
+            posCart.push({ id: selectedItem.id, name: selectedItem.name, price: selectedItem.price + totalAddonPrice, details: detailsArr.join(', ') });
+            closeAddons(); updatePOSDisplay();
+        }
+
+        function closeAddons() { document.getElementById('addon-modal').style.display = 'none'; }
+        function updatePOSDisplay() {
+            const list = document.getElementById('pos-cart-list'); const total = posCart.reduce((sum, item) => sum + item.price, 0);
+            if (posCart.length === 0) list.innerHTML = "Cart Empty"; else list.innerHTML = posCart.map(i => `<div>${i.name} <span style="color:#aaa; font-size:11px;">(${i.details})</span> - ${i.price}</div>`).join('');
+            document.getElementById('pos-total').innerText = "KES " + total;
+        }
+
+        async function submitPOS() {
+            if(posCart.length === 0) return alert("Empty order!");
+            const handler = document.getElementById('pos-staff-select').value;
+            if(!handler) return alert("Select who took this order!");
+
+            const total = posCart.reduce((sum, item) => sum + item.price, 0);
+            const { error } = await db.from('orders').insert([{
+                customer_phone: 'Walk-In', items: posCart, total_price: total,
+                status: 'received', payment_status: 'paid', payment_method: 'cash', order_type: 'takeaway',
+                handled_by: handler // Save name
+            }]);
+            if(error) alert("Error"); else { for (let item of posCart) { await db.rpc('decrease_stock', { item_id: item.id, quantity: 1 }); } closePOS(); loadOrders(); }
+        }
+
+        function initRealtime() {
+            db.channel('kitchen-feed').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+                loadOrders(); 
+                if (payload.eventType === 'INSERT') { const audio = document.getElementById('audio-new-order'); audio.currentTime = 0; audio.play().catch(e => console.log(e)); }
+            }).subscribe();
+        }
+    </script>
+</body>
+</html>
