@@ -664,12 +664,29 @@
         async function loadMenuGrid() { 
             const { data } = await db.from('menu_items').select('*').order('id'); 
             const grid = document.getElementById('menu-grid'); 
+            // NEW: Offline-friendly gray placeholder
+            const OFFLINE_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
             if(grid) { 
                 grid.innerHTML = ""; 
                 data.forEach(item => { 
-                    const img = item.image_url || 'https://via.placeholder.com/300'; 
-                    const stockBadge = item.stock_quantity < 5 ? `<div class="stock-badge" style="background:var(--accent)">Low: ${item.stock_quantity}</div>` : `<div class="stock-badge">${item.stock_quantity} in stock</div>`; 
-                    grid.innerHTML += `<div class="menu-item-card">${stockBadge}<img src="${img}" class="menu-img"><div style="padding:15px;"><b>${item.name}</b><br><span style="color:var(--secondary); font-weight:700;">KES ${item.price}</span><button style="width:100%; margin-top:10px; padding:8px; cursor:pointer; border:1px solid var(--border); background:var(--bg-body); border-radius:8px;" onclick='openEditor(${JSON.stringify(item)})'>Edit Details</button></div></div>`; 
+                    // Use the item's image, or the offline gray box if missing
+                    const img = item.image_url || OFFLINE_IMG; 
+                    
+                    const stockBadge = item.stock_quantity < 5 
+                        ? `<div class="stock-badge" style="background:var(--accent)">Low: ${item.stock_quantity}</div>` 
+                        : `<div class="stock-badge">${item.stock_quantity} in stock</div>`; 
+
+                    grid.innerHTML += `
+                        <div class="menu-item-card">
+                            ${stockBadge}
+                            <img src="${img}" class="menu-img" onerror="this.src='${OFFLINE_IMG}'">
+                            <div style="padding:15px;">
+                                <b>${item.name}</b><br>
+                                <span style="color:var(--secondary); font-weight:700;">KES ${item.price}</span>
+                                <button style="width:100%; margin-top:10px; padding:8px; cursor:pointer; border:1px solid var(--border); background:var(--bg-body); border-radius:8px;" onclick='openEditor(${JSON.stringify(item)})'>Edit Details</button>
+                            </div>
+                        </div>`; 
                 }); 
             } 
         }
@@ -718,26 +735,57 @@
         
         window.saveItem = async () => { 
             const id = document.getElementById('edit-id').value; 
+            const btn = document.querySelector('button[onclick="saveItem()"]');
+            btn.innerText = "Saving..."; btn.disabled = true;
+
+            // 1. Prepare data object carefully
             let updateData = { 
                 name: document.getElementById('edit-name').value, 
-                price: document.getElementById('edit-price').value, 
+                price: parseFloat(document.getElementById('edit-price').value) || 0, 
                 category: document.getElementById('edit-category').value, 
-                original_price: document.getElementById('edit-original').value || 0, 
+                original_price: parseFloat(document.getElementById('edit-original').value) || 0, 
                 description: document.getElementById('edit-desc').value, 
                 stock_quantity: parseInt(document.getElementById('edit-stock').value) || 0, 
-                inventory_note: document.getElementById('inventory-note') ? document.getElementById('inventory-note').value : "",
                 addons: currentAddons, 
                 is_available: true 
             }; 
+
+            // Optional: Only include inventory_note if the column exists in your DB
+            const noteEl = document.getElementById('inventory-note');
+            if (noteEl && noteEl.value) {
+                updateData.inventory_note = noteEl.value;
+            }
+
+            // 2. Handle Image Upload
             const fileInput = document.getElementById('edit-image'); 
             if (fileInput.files.length > 0) { 
                 const fileName = `img_${Date.now()}`; 
-                await db.storage.from('menu_photos').upload(fileName, fileInput.files[0]); 
-                const { data: urlData } = db.storage.from('menu_photos').getPublicUrl(fileName); 
-                updateData.image_url = urlData.publicUrl; 
+                const { error: uploadError } = await db.storage.from('menu_photos').upload(fileName, fileInput.files[0]); 
+                if (!uploadError) {
+                    const { data: urlData } = db.storage.from('menu_photos').getPublicUrl(fileName); 
+                    updateData.image_url = urlData.publicUrl; 
+                }
             } 
-            if(id) await db.from('menu_items').update(updateData).eq('id', id); else await db.from('menu_items').insert([updateData]); 
-            closeEditor(); loadMenuGrid(); loadStockAlert(); 
+
+            // 3. Execute Database Command
+            let result;
+            if (id) { 
+                result = await db.from('menu_items').update(updateData).eq('id', id); 
+            } else { 
+                result = await db.from('menu_items').insert([updateData]); 
+            } 
+
+            // 4. Handle Result
+            if (result.error) {
+                console.error("Database Error Detail:", result.error);
+                alert("Failed to save: " + result.error.message);
+                btn.innerText = "Save Changes"; btn.disabled = false;
+            } else {
+                closeEditor(); 
+                loadMenuGrid(); 
+                loadStockAlert(); 
+                btn.innerText = "Save Changes"; btn.disabled = false;
+            }
         };
         window.deleteItem = async () => { if(confirm("Delete?")) { await db.from('menu_items').delete().eq('id', document.getElementById('edit-id').value); closeEditor(); loadMenuGrid(); } };
         
