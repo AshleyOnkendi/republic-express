@@ -2,74 +2,185 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Barista POS | Republic Express</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root { --bg-color: #1a1a1a; --text-color: #eee; --card-bg: #2d2d2d; --border-color: #444; --header-border: #333; --btn-text: white; --meta-color: #aaa; }
-        body.light-mode { --bg-color: #f4f4f4; --text-color: #333; --card-bg: #ffffff; --border-color: #ddd; --header-border: #ddd; --btn-text: #333; --meta-color: #666; }
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: background 0.3s, color 0.3s; }
+    <style>
+        /* --- PREMIUM KITCHEN THEME --- */
+        :root {
+            --bg-body: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --accent-new: #f1c40f; /* Yellow for New Orders */
+            --accent-brew: #2ecc71; /* Green for Brewing */
+            --accent-ready: #ffffff; /* White for Ready */
+            --border: #333333;
+            --radius: 12px;
+        }
+
+        body.light-mode {
+            --bg-body: #f4f6f8;
+            --bg-card: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border: #e1e4e8;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: var(--bg-body); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 20px; 
+            transition: background 0.3s; 
+        }
+
+        /* --- HEADER --- */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding-bottom: 20px; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid var(--border); 
+        }
         
-        /* OVERLAYS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; }
-        #interaction-overlay { z-index: 9999; display: flex; flex-direction: column; } 
+        .brand h1 { margin: 0; font-size: 24px; font-weight: 700; color: var(--accent-new); letter-spacing: -0.5px; }
+        .clock { color: var(--text-muted); font-size: 14px; font-weight: 600; margin-top: 4px; }
+
+        .header-controls { display: flex; gap: 10px; }
         
-        .start-btn { padding: 20px 50px; font-size: 24px; font-weight: bold; background: #ffcc00; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 0 30px rgba(255, 204, 0, 0.4); animation: pulse 2s infinite; color: black; }
+        .btn-header { 
+            background: var(--bg-card); 
+            color: var(--text-main); 
+            border: 1px solid var(--border); 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+        .btn-pos { background: var(--accent-brew); color: white; border: none; }
+        .btn-header:active { transform: scale(0.96); }
+
+        /* --- ORDERS GRID (MASONRY STYLE) --- */
+        #orders-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 20px; 
+        }
+
+        /* --- ORDER CARD --- */
+        .order-card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            padding: 20px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2); 
+            position: relative; 
+            border-top: 6px solid transparent; 
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Status Colors */
+        .status-received { border-top-color: var(--accent-new); }
+        .status-brewing { border-top-color: var(--accent-brew); }
+        .status-ready { border-top-color: var(--accent-ready); opacity: 0.8; }
+
+        .card-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 10px; 
+        }
+        .order-id { font-size: 18px; font-weight: 800; color: var(--text-main); }
+        .order-time { font-size: 12px; background: var(--border); padding: 4px 8px; border-radius: 4px; }
+
+        .order-items { margin-bottom: 20px; }
+        .item-row { margin-bottom: 8px; font-size: 15px; }
+        .item-qty { font-weight: 700; color: var(--accent-new); margin-right: 5px; }
+        .item-details { display: block; font-size: 12px; color: var(--text-muted); margin-left: 20px; }
+
+        .card-footer { display: flex; flex-direction: column; gap: 10px; }
+
+        /* --- BUTTONS --- */
+        .btn-action { 
+            width: 100%; padding: 14px; 
+            border: none; border-radius: 8px; 
+            font-weight: 700; font-size: 14px; 
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+            transition: 0.2s; 
+        }
+        
+        .btn-brew { background: var(--accent-new); color: black; }
+        .btn-ready { background: var(--accent-brew); color: white; }
+        .btn-done { background: transparent; border: 2px solid var(--border); color: var(--text-muted); }
+        .btn-pay { background: #e74c3c; color: white; animation: flash 2s infinite; }
+        @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* --- STAFF SELECTOR --- */
+        .staff-select { 
+            width: 100%; padding: 10px; 
+            background: var(--bg-body); color: var(--text-main); 
+            border: 1px solid var(--border); border-radius: 6px; 
+            margin-bottom: 10px; font-family: inherit; 
+        }
+
+        /* --- OVERLAYS --- */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            z-index: 2000; display: none; 
+            align-items: center; justify-content: center; 
+        }
+        
+        .start-btn { 
+            padding: 20px 40px; font-size: 20px; font-weight: 800; 
+            background: var(--accent-new); color: black; 
+            border: none; border-radius: 50px; cursor: pointer; 
+            box-shadow: 0 0 30px rgba(241, 196, 15, 0.4); 
+            animation: pulse 2s infinite; 
+        }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* HEADER */
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--header-border); padding-bottom: 20px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-        h1 { margin: 0; color: #ffcc00; font-size: 24px; }
-        .header-controls { display: flex; gap: 10px; }
-        .action-btn { background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 10px 15px; cursor: pointer; border-radius: 5px; font-weight: bold; }
-        .pos-btn { background: #25D366; color: white; border: none; }
-
-        /* ORDERS GRID */
-        #orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        /* --- POS MODAL (Tablet Style) --- */
+        .pos-box { 
+            background: var(--bg-card); 
+            width: 900px; height: 90vh; max-width: 95%; 
+            border-radius: 16px; padding: 25px; 
+            display: flex; flex-direction: column; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5); 
+        }
         
-        .order-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left: 5px solid transparent; position: relative; }
-        .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; color: var(--meta-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-        .time-badge { background: var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+        #pos-menu { 
+            flex: 1; overflow-y: auto; 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 15px; margin-top: 20px; 
+        }
         
-        .status-received { border-left-color: #ffcc00; }
-        .status-brewing { border-left-color: #25D366; }
-        .status-ready { border-left-color: white; }
-        
-        .unpaid-overlay { position: absolute; top: 10px; right: 10px; background: red; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; animation: flash 1s infinite; }
-        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-        .actions { margin-top: 15px; display: grid; gap: 10px; }
-        .btn { padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
-        .btn-brew { background: #ffcc00; color: #000; }
-        .btn-ready { background: #25D366; color: white; }
-        .btn-done { background: var(--border-color); color: var(--meta-color); border: 1px solid var(--meta-color); }
-        .btn-pay { background: #333; color: white; border: 1px solid white; }
-
-        /* STAFF SELECTOR */
-        .staff-select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ffcc00; background: var(--bg-color); color: var(--text-color); margin-bottom: 10px; font-weight: bold; }
-
-        /* POS MODAL */
-        .pos-content { background: var(--card-bg); width: 800px; max-width: 95%; height: 85vh; padding: 20px; border-radius: 10px; display: flex; flex-direction: column; }
-        #pos-menu { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 15px; }
-        .pos-item { border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; overflow: hidden; background: var(--bg-color); transition: 0.2s; }
-        .pos-item:active { transform: scale(0.95); border-color: #ffcc00; }
+        .pos-item { 
+            background: var(--bg-body); border: 1px solid var(--border); 
+            border-radius: 12px; cursor: pointer; 
+            overflow: hidden; transition: 0.1s; 
+        }
+        .pos-item:active { transform: scale(0.95); border-color: var(--accent-new); }
         .pos-img { width: 100%; height: 100px; object-fit: cover; }
-        .pos-details { padding: 10px; text-align: center; }
-        .pos-name { font-weight: bold; font-size: 14px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pos-info { padding: 10px; text-align: center; }
         
-        /* ADD-ON MODAL */
-        #addon-modal { z-index: 6000; } 
-        .addon-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 400px; max-width: 90%; }
-        .opt-group { margin-bottom: 15px; }
-        .opt-title { font-weight: bold; margin-bottom: 5px; color: #ffcc00; }
-        .opt-btn { padding: 8px 12px; margin: 0 5px 5px 0; border: 1px solid var(--border-color); background: transparent; color: var(--text-color); border-radius: 20px; cursor: pointer; transition: 0.2s; }
-        .opt-btn:hover { background: rgba(255,204,0,0.2); }
-        .opt-btn.selected { background: #ffcc00; color: black; border-color: #ffcc00; font-weight: bold; }
+        /* ADDON MODAL */
+        .addon-box { background: var(--bg-card); padding: 30px; border-radius: 16px; width: 400px; max-width: 90%; }
+        .opt-btn { 
+            padding: 10px 15px; margin: 5px; 
+            border: 1px solid var(--border); background: transparent; 
+            color: var(--text-main); border-radius: 8px; cursor: pointer; 
+        }
+        .opt-btn.selected { background: var(--accent-new); color: black; border-color: var(--accent-new); font-weight: 700; }
 
-        .pos-footer { margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 10px; }
-
-        @media (max-width: 600px) { #orders-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -77,51 +188,68 @@
     <audio id="audio-new-order"><source src="https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3" type="audio/mpeg"></audio>
 
     <div id="interaction-overlay" class="modal-overlay" style="display:flex;">
-        <h1 style="color:white; margin-bottom:20px;">☕ Kitchen Display</h1>
-        <button class="start-btn" onclick="startShift()">🔔 START SHIFT</button>
+        <div style="text-align:center;">
+            <h1 style="color:white; margin-bottom:10px;">☕ Kitchen Display</h1>
+            <p style="color:#aaa; margin-bottom:30px;">Tap to initialize audio & realtime connection</p>
+            <button class="start-btn" onclick="startShift()">START SHIFT 🔔</button>
+        </div>
     </div>
 
     <div id="pos-modal" class="modal-overlay">
-        <div class="pos-content">
+        <div class="pos-box">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 style="margin:0;">New Walk-In Order</h2>
-                <button onclick="closePOS()" style="background:none; border:none; color:red; font-size:28px; cursor:pointer;">×</button>
+                <h2 style="margin:0;">New Order</h2>
+                <button onclick="closePOS()" style="background:none; border:none; color:var(--text-muted); font-size:28px; cursor:pointer;">×</button>
             </div>
-            <div id="pos-menu">Loading menu...</div>
-            <div class="pos-footer">
-                <div id="pos-cart-list" style="max-height: 100px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; color: var(--meta-color);">Cart empty</div>
-                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:18px; margin-bottom:10px;">
-                    <span>Total:</span> <span id="pos-total">KES 0</span>
+            
+            <div id="pos-menu">Loading Menu...</div>
+            
+            <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+                <div id="pos-cart-list" style="max-height: 100px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; color: var(--text-muted);">Cart Empty</div>
+                
+                <div style="display:flex; justify-content:space-between; font-size:20px; font-weight:700; margin-bottom:15px;">
+                    <span>Total</span>
+                    <span>KES <span id="pos-total">0</span></span>
                 </div>
-                <select id="pos-staff-select" class="staff-select" style="margin-bottom:10px;">
-                    <option value="">Loading Staff...</option>
-                </select>
-                <button class="btn btn-brew" onclick="submitPOS()">💵 CONFIRM PAYMENT</button>
+                
+                <div style="display:flex; gap:10px;">
+                    <select id="pos-staff-select" class="staff-select" style="flex:1; margin:0;">
+                        <option value="">Loading Staff...</option>
+                    </select>
+                    <button class="btn-header btn-pos" style="flex:1;" onclick="submitPOS()">CHARGE 💵</button>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="addon-modal" class="modal-overlay">
-        <div class="addon-content">
+        <div class="addon-box">
             <h3 id="addon-title" style="margin-top:0;">Customize</h3>
             <div id="addon-options"></div>
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="btn btn-ready" style="flex:1" onclick="confirmAddons()">Add Item</button>
-                <button class="btn" style="background:transparent; color:#888; flex:1" onclick="closeAddons()">Cancel</button>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-action btn-ready" style="flex:1;" onclick="confirmAddons()">Add Item</button>
+                <button class="btn-action btn-done" style="flex:1;" onclick="closeAddons()">Cancel</button>
             </div>
         </div>
     </div>
 
     <header>
-        <div><h1>☕ Barista Station</h1><span id="clock" style="color:#888; font-size:14px;">Shift Not Started</span></div>
+        <div class="brand">
+            <h1>Kitchen Display</h1>
+            <div class="clock" id="clock">Shift Not Started</div>
+        </div>
         <div class="header-controls">
-            <button class="action-btn pos-btn" onclick="openPOS()">+ Walk-In</button>
-            <button class="action-btn" onclick="toggleTheme()" id="theme-btn">☀️ Light Mode</button>
-            <button class="action-btn" onclick="logout()">Logout</button>
+            <button class="btn-header btn-pos" onclick="openPOS()">+ Walk-In Order</button>
+            <button class="btn-header" onclick="toggleTheme()" id="theme-btn">☀️ Light</button>
+            <button class="btn-header" onclick="logout()" style="color:#e74c3c;">Logout</button>
         </div>
     </header>
 
-    <div id="orders-grid"><p style="color:#888;">Waiting for shift start...</p></div>
+    <div id="orders-grid">
+        <div style="grid-column:1/-1; text-align:center; padding:50px; color:var(--text-muted);">
+            Waiting for shift start...
+        </div>
+    </div>
 
     <script>
         const PROJECT_URL = "https://uveudhkfncwbllczhbhf.supabase.co";
@@ -139,7 +267,6 @@
         const user = JSON.parse(localStorage.getItem('republic_user'));
         if (!user || user.role !== 'barista') window.location.href = 'login.html';
 
-        // --- FIXED: ASYNC STARTUP TO PREVENT EMPTY LISTS ---
         async function startShift() {
             const audio = document.getElementById('audio-new-order');
             audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => console.log(e));
@@ -147,10 +274,7 @@
             document.getElementById('interaction-overlay').style.display = 'none';
             initRealtime();
             
-            // 1. Load Staff FIRST (Wait for it)
             await loadStaff();
-            
-            // 2. THEN Load Orders (So they have the list ready)
             loadOrders(); 
             loadMenuForPOS();
             
@@ -161,37 +285,33 @@
             document.body.classList.toggle('light-mode');
             const isLight = document.body.classList.contains('light-mode');
             localStorage.setItem('barista_theme', isLight ? 'light' : 'dark');
-            document.getElementById('theme-btn').innerText = isLight ? "🌙 Dark Mode" : "☀️ Light Mode";
+            document.getElementById('theme-btn').innerText = isLight ? "🌙 Dark" : "☀️ Light";
         }
-        if (localStorage.getItem('barista_theme') === 'light') { document.body.classList.add('light-mode'); document.getElementById('theme-btn').innerText = "🌙 Dark Mode"; }
+        if (localStorage.getItem('barista_theme') === 'light') { document.body.classList.add('light-mode'); document.getElementById('theme-btn').innerText = "🌙 Dark"; }
 
-        // --- LOAD STAFF ---
+        // --- STAFF ---
         async function loadStaff() {
-            console.log("Loading staff...");
-            const { data, error } = await db.from('users').select('username'); // Fetch ALL users to be safe
-            
+            const { data } = await db.from('users').select('username').in('role', ['barista', 'owner']);
             if (data && data.length > 0) {
                 staffList = data.map(u => u.username);
-                console.log("Staff found:", staffList);
             } else {
-                console.log("No staff found via DB, using default.");
-                staffList = ['Owner']; // Fallback so dropdown isn't empty
+                staffList = ['Owner'];
             }
-
-            // Update POS Dropdown immediately
             const posSelect = document.getElementById('pos-staff-select');
             if(posSelect) {
-                posSelect.innerHTML = '<option value="">Select Who Took This Order...</option>' + 
-                    staffList.map(name => `<option value="${name}">${name}</option>`).join('');
+                posSelect.innerHTML = '<option value="">Select Server...</option>' + staffList.map(name => `<option value="${name}">${name}</option>`).join('');
             }
         }
 
-        // --- ORDER CARD LOGIC ---
+        // --- ORDERS ---
         async function loadOrders() {
             const { data } = await db.from('orders').select('*').neq('status', 'completed').order('created_at', { ascending: true });
             const grid = document.getElementById('orders-grid');
             grid.innerHTML = "";
-            if(!data || data.length === 0) { grid.innerHTML = "<p style='color:var(--meta-color)'>No active orders. 🧹</p>"; return; }
+            if(!data || data.length === 0) { 
+                grid.innerHTML = "<div style='grid-column:1/-1; text-align:center; margin-top:50px; color:var(--text-muted);'>No active orders. Kitchen is clear! 🧹</div>"; 
+                return; 
+            }
             data.forEach(renderCard);
         }
 
@@ -201,34 +321,44 @@
             card.className = `order-card status-${order.status}`;
             
             const isUnpaid = order.payment_status === 'pending';
-            const unpaidBadge = isUnpaid ? `<div class="unpaid-overlay">💰 COLLECT CASH</div>` : '';
+            const location = order.order_type === 'dine_in' ? `📍 Table ${order.table_number || '?'}` : `📦 Takeaway`;
             
-            let locationBadge = order.order_type === 'dine_in' 
-                ? `<div style="background:#ffcc00; color:black; padding:5px 10px; font-weight:800; border-radius:4px; display:inline-block; margin-bottom:10px;">📍 TABLE ${order.table_number || '?'}</div>`
-                : `<div style="background:#eee; color:#333; padding:5px 10px; font-weight:800; border-radius:4px; display:inline-block; margin-bottom:10px;">📦 TAKEAWAY</div>`;
+            const itemsHtml = order.items.map(i => `
+                <div class="item-row">
+                    <span class="item-qty">1x</span> ${i.name}
+                    <span class="item-details">${i.details || ''}</span>
+                </div>
+            `).join('');
 
-            const itemsHtml = order.items.map(i => `<div><div style="font-weight:bold;">1x ${i.name}</div><span style="font-size:12px; color:var(--meta-color);">${i.details || ''}</span></div>`).join('');
-
-            // Staff Selector logic
-            let staffSelectorHtml = '';
+            // Staff Dropdown
+            let staffHtml = '';
             if (order.handled_by) {
-                staffSelectorHtml = `<div style="color:#ffcc00; font-size:12px; margin-bottom:10px;">Handled by: <b>${order.handled_by}</b></div>`;
+                staffHtml = `<div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Server: <b style="color:var(--text-main)">${order.handled_by}</b></div>`;
             } else {
-                // If staffList is somehow empty (network error), fallback to "Unknown"
-                const options = staffList.length > 0 ? staffList.map(name => `<option value="${name}">${name}</option>`).join('') : '<option value="Owner">Owner</option>';
-                staffSelectorHtml = `<select id="staff-select-${order.id}" class="staff-select"><option value="">Select Your Name...</option>${options}</select>`;
+                const options = staffList.map(name => `<option value="${name}">${name}</option>`).join('');
+                staffHtml = `<select id="staff-select-${order.id}" class="staff-select"><option value="">Claim Order...</option>${options}</select>`;
             }
 
+            // Buttons
             let btnHtml = '';
             if (isUnpaid) {
-                btnHtml = `<button class="btn btn-pay" onclick="markPaid(${order.id})">CONFIRM CASH RECEIVED 💵</button>`;
+                btnHtml = `<button class="btn-action btn-pay" onclick="markPaid(${order.id})">💰 Collect Cash</button>`;
             } else {
-                if (order.status === 'received') btnHtml = `<button class="btn btn-brew" onclick="updateStatus(${order.id}, 'brewing')">START BREWING ☕</button>`;
-                else if (order.status === 'brewing') btnHtml = `<button class="btn btn-ready" onclick="updateStatus(${order.id}, 'ready')">MARK READY ✅</button>`;
-                else if (order.status === 'ready') btnHtml = `<button class="btn btn-done" onclick="updateStatus(${order.id}, 'completed')">PICKED UP (Archive)</button>`;
+                if (order.status === 'received') btnHtml = `<button class="btn-action btn-brew" onclick="updateStatus(${order.id}, 'brewing')">Start Brewing ☕</button>`;
+                else if (order.status === 'brewing') btnHtml = `<button class="btn-action btn-ready" onclick="updateStatus(${order.id}, 'ready')">Mark Ready ✅</button>`;
+                else if (order.status === 'ready') btnHtml = `<button class="btn-action btn-done" onclick="updateStatus(${order.id}, 'completed')">Archive Order 📦</button>`;
             }
 
-            card.innerHTML = `${unpaidBadge}<div class="card-header"><span>#${order.id}</span><span class="time-badge">${new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>${locationBadge}${staffSelectorHtml}<div style="margin-bottom:15px;">${itemsHtml}</div><div style="font-size:12px; color:var(--meta-color); margin-bottom:15px;">Cust: ${order.customer_phone || 'Walk-in'}</div><div class="actions">${btnHtml}</div>`;
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="order-id">#${order.id}</span>
+                    <span class="order-time">${new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+                <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); text-transform:uppercase; font-size:12px;">${location}</div>
+                ${staffHtml}
+                <div class="order-items">${itemsHtml}</div>
+                <div class="card-footer">${btnHtml}</div>
+            `;
             grid.appendChild(card);
         }
 
@@ -236,7 +366,7 @@
             const selectEl = document.getElementById(`staff-select-${id}`);
             let handlerName = null;
             if (selectEl) { 
-                if (selectEl.value === "") return alert("Please select your name first!"); 
+                if (selectEl.value === "") return alert("Please claim this order first!"); 
                 handlerName = selectEl.value; 
             }
             
@@ -249,7 +379,7 @@
         async function markPaid(id) { if(confirm("Cash received?")) { await db.from('orders').update({ payment_status: 'paid' }).eq('id', id); loadOrders(); } }
         function logout() { localStorage.removeItem('republic_user'); window.location.href = 'login.html'; }
 
-        // --- POS SYSTEM ---
+        // --- POS FUNCTIONS ---
         async function loadMenuForPOS() { const { data } = await db.from('menu_items').select('*').eq('is_available', true); menuItems = data; }
         function openPOS() { document.getElementById('pos-modal').style.display = 'flex'; posCart = []; updatePOSDisplay(); renderPOSMenu(); }
         function closePOS() { document.getElementById('pos-modal').style.display = 'none'; }
@@ -258,7 +388,14 @@
             const container = document.getElementById('pos-menu');
             container.innerHTML = menuItems.map(item => {
                 const img = item.image_url || PLACEHOLDER_IMG;
-                return `<div class="pos-item" onclick='clickPOSItem(${JSON.stringify(item)})'><img src="${img}" class="pos-img"><div class="pos-details"><div class="pos-name">${item.name}</div><div style="font-size:12px; font-weight:bold;">${item.price}</div></div></div>`;
+                return `
+                <div class="pos-item" onclick='clickPOSItem(${JSON.stringify(item)})'>
+                    <img src="${img}" class="pos-img">
+                    <div class="pos-info">
+                        <div style="font-weight:700; font-size:14px;">${item.name}</div>
+                        <div style="color:var(--text-muted); font-size:12px;">${item.price}</div>
+                    </div>
+                </div>`;
             }).join('');
         }
 
@@ -267,19 +404,18 @@
             else { posCart.push({ id: item.id, name: item.name, price: item.price, details: '' }); updatePOSDisplay(); }
         }
 
-        // --- TOGGLE ADDONS (FIXED) ---
         function openAddonModal(item) {
             selectedItem = item; selectedAddons = {};
-            document.getElementById('addon-title').innerText = "Customize " + item.name;
+            document.getElementById('addon-title').innerText = item.name;
             const container = document.getElementById('addon-options'); container.innerHTML = "";
             
-            item.addons.forEach((group, gIndex) => {
-                const groupDiv = document.createElement('div'); groupDiv.className = 'opt-group'; groupDiv.innerHTML = `<div class="opt-title">${group.name}</div>`;
-                group.options.forEach((opt, oIndex) => {
+            item.addons.forEach((group) => {
+                const groupDiv = document.createElement('div'); 
+                groupDiv.innerHTML = `<div style="font-weight:700; margin:10px 0 5px 0;">${group.name}</div>`;
+                group.options.forEach((opt) => {
                     const btn = document.createElement('button'); btn.className = 'opt-btn'; 
                     btn.innerText = opt.price > 0 ? `${opt.name} (+${opt.price})` : opt.name;
                     
-                    // TOGGLE CLICK
                     btn.onclick = function() {
                         const isSelected = this.classList.contains('selected');
                         groupDiv.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
@@ -307,14 +443,15 @@
         function closeAddons() { document.getElementById('addon-modal').style.display = 'none'; }
         function updatePOSDisplay() {
             const list = document.getElementById('pos-cart-list'); const total = posCart.reduce((sum, item) => sum + item.price, 0);
-            if (posCart.length === 0) list.innerHTML = "Cart Empty"; else list.innerHTML = posCart.map(i => `<div>${i.name} <span style="color:#aaa; font-size:11px;">(${i.details})</span> - ${i.price}</div>`).join('');
-            document.getElementById('pos-total').innerText = "KES " + total;
+            if (posCart.length === 0) list.innerHTML = "Cart Empty"; 
+            else list.innerHTML = posCart.map(i => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding:5px 0;"><span>1x ${i.name} <small style="color:var(--text-muted)">${i.details}</small></span><span>${i.price}</span></div>`).join('');
+            document.getElementById('pos-total').innerText = total;
         }
 
         async function submitPOS() {
             if(posCart.length === 0) return alert("Empty order!");
             const handler = document.getElementById('pos-staff-select').value;
-            if(!handler) return alert("Select who took this order!");
+            if(!handler) return alert("Select Server!");
 
             const total = posCart.reduce((sum, item) => sum + item.price, 0);
             const { error } = await db.from('orders').insert([{
