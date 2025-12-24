@@ -95,5 +95,20 @@
             document.getElementById('review-modal').style.display = 'none';
         }
     </script>
+<div id="review-modal" class="modal-overlay">
+    <div class="modal-box" style="text-align:center;">
+        <h2 style="margin:0; font-size:20px;">Enjoying your coffee?</h2>
+        <p style="color:#666; font-size:14px; margin-bottom:20px;">Rate your experience at Republic Express</p>
+        
+        <div id="star-rating" style="font-size:35px; margin-bottom:20px; cursor:pointer; letter-spacing:8px;">
+            <span onclick="setRating(1)">☆</span><span onclick="setRating(2)">☆</span><span onclick="setRating(3)">☆</span><span onclick="setRating(4)">☆</span><span onclick="setRating(5)">☆</span>
+        </div>
+
+        <textarea id="review-comment" class="form-input" placeholder="Optional: Any feedback for the barista?" rows="3"></textarea>
+        
+        <button id="submit-review-btn" onclick="submitReview()" style="width:100%; padding:14px; border-radius:12px; background:var(--primary); color:white; border:none; font-weight:700;">SUBMIT REVIEW</button>
+        <button onclick="closeReview()" style="background:none; border:none; color:#888; margin-top:15px; font-size:13px;">Maybe later</button>
+    </div>
+</div>
 </body>
 </html>
