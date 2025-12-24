@@ -11,12 +11,16 @@
 <body>
 
     <div class="hero">
-        <div style="display:flex; justify-content:space-between;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-                <h1>Republic <span class="hero-brand">Express</span></h1>
-                <p>Premium coffee, crafted for you.</p>
+                <h1>Republic Express</h1>
+                <p>Fuel your day.</p>
             </div>
-            <a href="login.html" style="opacity:0.2; text-decoration:none; color:white; font-size:20px;">☕</a>
+            
+            <div class="top-cart-btn" onclick="openCheckout()">
+                <span style="font-size:18px;">🛍️</span>
+                <span id="top-cart-badge" class="badge-pop">0</span>
+            </div>
         </div>
     </div>
 
@@ -24,108 +28,105 @@
         </div>
 
     <div id="menu-container">
-        <p style="text-align:center; margin-top:50px; color:#999;">Loading Menu...</p>
+        <div style="grid-column:1/-1; text-align:center; padding:40px; font-size:12px; color:#aaa;">Loading...</div>
     </div>
 
     <div id="cart-bar" onclick="openCheckout()">
-        <div class="cart-left">
+        <div style="display:flex; align-items:center;">
             <span class="cart-count" id="cart-count-badge">0</span>
             <span>View Order</span>
         </div>
-        <div style="font-weight:700;">KES <span id="cart-total">0</span></div>
+        <div>KES <span id="cart-total">0</span></div>
     </div>
 
     <div id="checkout-modal" class="modal-overlay">
         <div class="modal-box">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="margin:0; font-size:22px;">Your Order</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="margin:0;">My Order</h2>
                 <button onclick="closeCheckout()" style="background:none; border:none; font-size:24px; color:#888;">&times;</button>
             </div>
 
-            <div id="order-summary" style="max-height: 200px; overflow-y: auto; margin-bottom: 25px;"></div>
+            <div id="order-summary"></div>
             
-            <div style="display:flex; justify-content:space-between; font-weight:700; font-size:18px; margin-bottom:25px; border-top:1px dashed #ddd; padding-top:15px;">
-                <span>Total Amount</span>
+            <div style="display:flex; justify-content:space-between; font-weight:700; font-size:16px; margin-bottom:20px; border-top:1px dashed #eee; padding-top:10px;">
+                <span>Total</span>
                 <span>KES <span id="modal-total">0</span></span>
             </div>
 
-            <label style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:block;">Service Type</label>
             <div class="toggle-group">
-                <button id="btn-takeaway" class="toggle-btn active" onclick="setOrderType('takeaway')">🏃 Takeaway</button>
-                <button id="btn-dinein" class="toggle-btn" onclick="setOrderType('dine_in')">🍽️ Dine-In</button>
+                <button id="btn-takeaway" class="toggle-btn active" onclick="setOrderType('takeaway')">Takeaway</button>
+                <button id="btn-dinein" class="toggle-btn" onclick="setOrderType('dine_in')">Dine-In</button>
+            </div>
+
+            <div class="toggle-group">
+                <button id="btn-mpesa" class="toggle-btn active" onclick="setPaymentMethod('mpesa')">M-Pesa</button>
+                <button id="btn-cash" class="toggle-btn" onclick="setPaymentMethod('cash')">Cash</button>
             </div>
 
             <div id="table-input-div" style="display:none;">
-                <input type="number" id="table-number" class="form-input" placeholder="Enter Table Number">
-            </div>
-
-            <label style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:block;">Payment Method</label>
-            <div class="toggle-group">
-                <button id="btn-mpesa" class="toggle-btn active" onclick="setPaymentMethod('mpesa')">📲 M-Pesa</button>
-                <button id="btn-cash" class="toggle-btn" onclick="setPaymentMethod('cash')">💵 Cash</button>
+                <input type="number" id="table-number" class="form-input" placeholder="Table No.">
             </div>
             
-            <input type="tel" id="phone-input" class="form-input" placeholder="Phone Number (Required)">
+            <input type="tel" id="phone-input" class="form-input" placeholder="Phone Number">
             
-            <button id="pay-btn" onclick="processPayment()" style="width:100%; padding:18px; border-radius:16px; border:none; background:var(--primary); color:white; font-weight:700; font-size:16px; margin-top:10px;">COMPLETE ORDER</button>
+            <button id="pay-btn" onclick="processPayment()">PLACE ORDER</button>
         </div>
     </div>
 
     <div id="receipt-modal" class="modal-overlay">
-        <div class="modal-box" style="text-align:center;">
-            <div id="receipt-area" style="background:#fffaf0; padding:20px; border:1px dashed #ccc; border-radius:16px; margin-bottom:20px;">
-                <h2 style="color:var(--primary); margin:0;">Republic Express</h2>
-                <p style="font-size:12px; color:#666; text-transform:uppercase; letter-spacing:2px;">Official Receipt</p>
-                <h1 id="receipt-total" style="font-size:36px; color:var(--primary); margin:15px 0;">KES 0</h1>
-                <div id="receipt-items" style="text-align:left; font-size:14px; margin:20px 0; border-top:1px dashed #ccc; border-bottom:1px dashed #ccc; padding:15px 0;"></div>
-                <div style="display:flex; justify-content:space-between; font-size:12px; color:#666; font-weight:600;">
+        <div class="modal-box" style="text-align:center; justify-content:center;">
+            <div id="receipt-area" style="background:#fffaf0; padding:20px; border:1px dashed #ccc; border-radius:12px; margin-bottom:15px;">
+                <h2 style="color:var(--primary); margin:0; font-size:18px;">Republic Express</h2>
+                <p style="font-size:10px; color:#666; text-transform:uppercase; letter-spacing:1px;">Receipt</p>
+                <h1 id="receipt-total" style="font-size:28px; color:var(--primary); margin:10px 0;">KES 0</h1>
+                <div id="receipt-items" style="text-align:left; font-size:12px; margin:15px 0; border-top:1px dashed #ccc; border-bottom:1px dashed #ccc; padding:10px 0;"></div>
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#666;">
                     <span id="receipt-id">#000</span>
                     <span id="receipt-footer">Paid</span>
                 </div>
             </div>
-            <button onclick="finishOrder()" style="width:100%; padding:16px; background:var(--primary); color:white; border:none; border-radius:14px; font-weight:bold;">Track Order →</button>
-            <button onclick="downloadReceipt()" style="width:100%; padding:10px; background:transparent; color:#888; border:none; margin-top:10px; font-size:13px;">Download Image 📥</button>
+            <button onclick="finishOrder()" style="width:100%; padding:14px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:700; font-size:14px;">Track Order</button>
+            <button onclick="downloadReceipt()" style="width:100%; padding:10px; background:transparent; color:#888; border:none; font-size:12px; margin-top:5px;">Save Receipt</button>
         </div>
     </div>
 
     <script src="script.js"></script>
     <script>
-        // Override the cart update to handle the animation class
+        // Override for Animation
         const originalUpdateCart = updateCartIcon;
         updateCartIcon = function() {
             const totalEl = document.getElementById('cart-total');
             const countEl = document.getElementById('cart-count-badge');
+            const topBadge = document.getElementById('top-cart-badge');
             const bar = document.getElementById('cart-bar');
             
             const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const count = cart.length;
             
             if (totalEl) totalEl.innerText = total.toLocaleString();
-            if (countEl) countEl.innerText = cart.length;
+            if (countEl) countEl.innerText = count;
+            if (topBadge) topBadge.innerText = count;
             
-            if(cart.length > 0) {
-                bar.style.display = 'flex'; // Ensure it's in the DOM
-                // Small delay to allow CSS transition to catch the display change
+            if(count > 0) {
+                bar.style.display = 'flex';
                 setTimeout(() => bar.classList.add('visible'), 10);
             } else {
                 bar.classList.remove('visible');
             }
         }
         
-        // Modal Logic Overrides for Animation
         const originalOpenCheckout = openCheckout;
         openCheckout = function() {
             if (cart.length === 0) return alert("Cart is empty!");
             const modal = document.getElementById('checkout-modal');
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('open'), 10); // Trigger CSS fade/slide
+            modal.classList.add('open');
             
-            // Populate data
             document.getElementById('modal-total').innerText = cart.reduce((sum, item) => sum + item.price, 0).toLocaleString();
             document.getElementById('order-summary').innerHTML = cart.map(item => `
-                <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f5f5f5; padding-bottom:8px;">
+                <div class="summary-item">
                     <div>
                         <div style="font-weight:600;">${item.name}</div>
-                        <div style="font-size:12px; color:#999;">${item.details || 'No extras'}</div>
+                        <span class="summary-meta">${item.details || ''}</span>
                     </div>
                     <div style="font-weight:600;">${item.price}</div>
                 </div>`).join('');
@@ -133,9 +134,7 @@
 
         const originalCloseCheckout = closeCheckout;
         closeCheckout = function() {
-            const modal = document.getElementById('checkout-modal');
-            modal.classList.remove('open');
-            setTimeout(() => modal.style.display = 'none', 300); // Wait for animation
+            document.getElementById('checkout-modal').classList.remove('open');
         }
     </script>
 </body>
