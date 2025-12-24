@@ -1,4 +1,4 @@
-console.log("🚀 SCRIPT V7 - OFFLINE PLACEHOLDER FIX");
+console.log("🚀 SCRIPT FINAL - TOGGLE ADDONS");
 
 const PROJECT_URL = "https://uveudhkfncwbllczhbhf.supabase.co";
 const PROJECT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2ZXVkaGtmbmN3YmxsY3poYmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NTE5MTksImV4cCI6MjA4MjEyNzkxOX0.30rZbjVgShWxeI5FOD8zGJU-Ho6h6d5s7foEIlQVSZI";
@@ -11,8 +11,9 @@ let currentPrice = 0;
 let addOns = {}; 
 let allMenuItems = [];
 let orderType = 'takeaway';
+let paymentMethod = 'mpesa';
 
-// NEW: Offline Gray Placeholder (No internet needed)
+// OFFLINE PLACEHOLDER
 const PLACEHOLDER_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
 // ROUTER
@@ -56,8 +57,6 @@ function renderGrid(category) {
     itemsToShow.forEach(item => {
         let saleBadge = '';
         let priceHtml = `KES ${item.price}`;
-        
-        // Inventory Check
         const isSoldOut = item.stock_quantity <= 0;
         
         if (isSoldOut) {
@@ -68,13 +67,10 @@ function renderGrid(category) {
             priceHtml = `<span class="old-price">${item.original_price}</span> KES ${item.price}`;
         }
 
-        // Use Offline Placeholder if URL is missing
         const imgUrl = item.image_url || PLACEHOLDER_IMG;
-        
         const card = document.createElement('div');
         card.className = 'menu-card';
         card.onclick = () => { if(!isSoldOut) window.location.href = `product.html?id=${item.id}`; };
-        
         const opacity = isSoldOut ? '0.6' : '1';
 
         card.innerHTML = `
@@ -90,7 +86,7 @@ function renderGrid(category) {
 }
 
 // ==========================================
-// 2. PRODUCT DETAIL
+// 2. PRODUCT DETAIL (FIXED TOGGLES)
 // ==========================================
 async function loadProductDetail() {
     const params = new URLSearchParams(window.location.search);
@@ -118,16 +114,36 @@ async function loadProductDetail() {
 
     let container = document.getElementById('dynamic-addons');
     if (!container) { container = document.createElement('div'); container.id = 'dynamic-addons'; const btn = document.getElementById('add-to-order-btn'); btn.parentNode.insertBefore(container, btn); }
-    container.innerHTML = ""; addOns = {}; 
+    container.innerHTML = ""; 
+    addOns = {}; // Reset
 
     if (data.addons && Array.isArray(data.addons)) {
         data.addons.forEach((group) => {
             const groupDiv = document.createElement('div'); groupDiv.className = 'option-group'; groupDiv.innerHTML = `<h3 style="font-size:16px; margin-bottom:10px;">${group.name}</h3>`;
             const rowDiv = document.createElement('div'); rowDiv.className = 'options-row';
-            group.options.forEach((opt, optIndex) => {
-                const btn = document.createElement('button'); btn.className = `opt-btn ${optIndex === 0 ? 'selected' : ''}`; btn.innerText = opt.price > 0 ? `${opt.name} (+${opt.price})` : opt.name;
-                if (optIndex === 0) addOns[group.name] = { name: opt.name, price: opt.price };
-                btn.onclick = function() { rowDiv.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); this.classList.add('selected'); addOns[group.name] = { name: opt.name, price: opt.price }; updateTotalBtn(); };
+            
+            group.options.forEach((opt) => {
+                const btn = document.createElement('button'); 
+                btn.className = `opt-btn`; // NO DEFAULT SELECTION
+                btn.innerText = opt.price > 0 ? `${opt.name} (+${opt.price})` : opt.name;
+                
+                // TOGGLE LOGIC
+                btn.onclick = function() {
+                    const isSelected = this.classList.contains('selected');
+                    
+                    // 1. Reset siblings (assuming single choice per group)
+                    rowDiv.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+                    
+                    if (!isSelected) {
+                        // 2. Select this one
+                        this.classList.add('selected');
+                        addOns[group.name] = { name: opt.name, price: opt.price };
+                    } else {
+                        // 3. Deselect (if clicked again) - Remove from logic
+                        delete addOns[group.name];
+                    }
+                    updateTotalBtn();
+                };
                 rowDiv.appendChild(btn);
             });
             groupDiv.appendChild(rowDiv); container.appendChild(groupDiv);
@@ -153,68 +169,49 @@ function addToOrder() {
 // 3. CHECKOUT & PAYMENT
 // ==========================================
 function updateCartIcon() { const totalEl = document.getElementById('cart-total'); if (totalEl) totalEl.innerText = cart.reduce((sum, item) => sum + item.price, 0).toLocaleString(); }
-function openCheckout() { if (cart.length === 0) return alert("Cart is empty!"); document.getElementById('checkout-modal').style.display = "flex"; document.getElementById('modal-total').innerText = cart.reduce((sum, item) => sum + item.price, 0).toLocaleString(); document.getElementById('order-summary').innerHTML = cart.map(item => `<div style="border-bottom:1px solid #eee; padding:5px 0;"><strong>${item.name}</strong><br><span style="font-size:12px; color:#666;">${item.details}</span><span style="float:right;">${item.price}</span></div>`).join(''); }
+function openCheckout() { 
+    if (cart.length === 0) return alert("Cart is empty!"); 
+    document.getElementById('checkout-modal').style.display = "flex"; 
+    document.getElementById('modal-total').innerText = cart.reduce((sum, item) => sum + item.price, 0).toLocaleString(); 
+    document.getElementById('order-summary').innerHTML = cart.map(item => `<div style="border-bottom:1px solid #eee; padding:5px 0;"><strong>${item.name}</strong><br><span style="font-size:12px; color:#666;">${item.details}</span><span style="float:right;">${item.price}</span></div>`).join(''); 
+}
 function closeCheckout() { document.getElementById('checkout-modal').style.display = "none"; }
 function setOrderType(type) { orderType = type; document.getElementById('btn-takeaway').className = type === 'takeaway' ? 'toggle-btn active' : 'toggle-btn'; document.getElementById('btn-dinein').className = type === 'dine_in' ? 'toggle-btn active' : 'toggle-btn'; document.getElementById('table-input-div').style.display = type === 'dine_in' ? 'block' : 'none'; }
-
-
-let paymentMethod = 'mpesa'; // Default
 
 function setPaymentMethod(method) {
     paymentMethod = method;
     document.getElementById('btn-mpesa').className = method === 'mpesa' ? 'toggle-btn active' : 'toggle-btn';
     document.getElementById('btn-cash').className = method === 'cash' ? 'toggle-btn active' : 'toggle-btn';
-    // Toggle Pay Button Text
     const btn = document.getElementById('pay-btn');
-    if (method === 'cash') {
-        btn.innerText = "PLACE ORDER (PAY AT COUNTER)";
-        btn.style.background = "#333";
-    } else {
-        btn.innerText = "PAY NOW (M-PESA)";
-        btn.style.background = "#25D366";
-    }
+    if (method === 'cash') { btn.innerText = "PLACE ORDER (PAY AT COUNTER)"; btn.style.background = "#333"; } 
+    else { btn.innerText = "PAY NOW (M-PESA)"; btn.style.background = "#25D366"; }
 }
 
 async function processPayment() {
     const phone = document.getElementById('phone-input').value;
     const tableNum = document.getElementById('table-number').value;
-
     if (!phone) return alert("Enter phone number!");
     if (orderType === 'dine_in' && !tableNum) return alert("Enter table number!");
 
-    const btn = document.getElementById('pay-btn');
-    btn.innerText = "Processing..."; btn.disabled = true;
+    const btn = document.getElementById('pay-btn'); btn.innerText = "Processing..."; btn.disabled = true;
 
     try {
         const total = cart.reduce((sum, item) => sum + item.price, 0);
-        // If Cash, status is 'pending'. If M-Pesa, we assume 'paid' (in this simplified demo)
         const pStatus = paymentMethod === 'cash' ? 'pending' : 'paid';
-
         const { data, error } = await db.from('orders').insert([{ 
             customer_phone: phone, items: cart, total_price: total, 
-            status: 'received', 
-            payment_status: pStatus, // <--- DYNAMIC STATUS
-            payment_method: paymentMethod, // <--- NEW FIELD
+            status: 'received', payment_status: pStatus, payment_method: paymentMethod,
             order_type: orderType, table_number: orderType === 'dine_in' ? tableNum : ''
         }]).select();
 
         if (error) throw error;
-
-        // Decrease stock immediately (even for cash orders, to reserve item)
         for (let item of cart) { await db.rpc('decrease_stock', { item_id: item.id, quantity: 1 }); }
-
-        const order = data[0];
-        showReceipt(order);
+        
+        const order = data[0]; showReceipt(order);
         localStorage.removeItem('republic_cart'); cart = [];
-
-    } catch (err) {
-        alert("Error: " + err.message);
-        btn.disabled = false;
-        setPaymentMethod(paymentMethod); // Reset text
-    }
+    } catch (err) { alert("Error: " + err.message); btn.disabled = false; setPaymentMethod(paymentMethod); }
 }
 
-// --- RECEIPT & DOWNLOAD (FIXED) ---
 function showReceipt(order) {
     document.getElementById('checkout-modal').style.display = 'none';
     document.getElementById('receipt-modal').style.display = 'flex';
@@ -222,68 +219,37 @@ function showReceipt(order) {
     document.getElementById('receipt-total').innerText = `KES ${order.total_price}`;
     document.getElementById('receipt-items').innerHTML = order.items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>1x ${i.name}</span><span>${i.price}</span></div>`).join('');
     const location = order.order_type === 'dine_in' ? `📍 Table ${order.table_number}` : `📦 Takeaway`;
-    document.getElementById('receipt-footer').innerText = `${location} • Paid via M-Pesa`;
+    document.getElementById('receipt-footer').innerText = `${location} • Paid via ${order.payment_method === 'cash' ? 'Cash' : 'M-Pesa'}`;
     window.lastOrderId = order.id;
 }
 
 function downloadReceipt() {
     const element = document.getElementById('receipt-area');
-    // Using html2canvas: captures the receipt-area DIV and saves as PNG
     html2canvas(element, { useCORS: true }).then(canvas => { 
-        const link = document.createElement('a'); 
-        link.download = `Republic_Receipt_${window.lastOrderId}.png`; 
-        link.href = canvas.toDataURL("image/png"); 
-        link.click(); 
+        const link = document.createElement('a'); link.download = `Republic_Receipt_${window.lastOrderId}.png`; link.href = canvas.toDataURL("image/png"); link.click(); 
     });
 }
-
 function finishOrder() { window.location.href = `track.html?id=${window.lastOrderId}`; }
 
 // ==========================================
-// 4. TRACKER & CHIME
+// 4. TRACKER & REVIEWS
 // ==========================================
 async function initTracker() {
     const params = new URLSearchParams(window.location.search);
-    const orderId = params.get('id');
-    if (!orderId) return;
-
-    if (!document.getElementById('audio-ready')) {
-        const audio = document.createElement('audio'); audio.id = 'audio-ready';
-        audio.src = "https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3"; 
-        document.body.appendChild(audio);
-    }
-
+    const orderId = params.get('id'); if (!orderId) return;
+    if (!document.getElementById('audio-ready')) { const audio = document.createElement('audio'); audio.id = 'audio-ready'; audio.src = "https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3"; document.body.appendChild(audio); }
     document.getElementById('order-id-display').innerText = `#${orderId}`;
     fetchStatus(orderId);
-
-    db.channel('public:orders').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
-        if (payload.new.id == orderId) {
-            updateTrackerUI(payload.new.status);
-            if (payload.new.status === 'ready') { try { document.getElementById('audio-ready').play(); } catch(e){} }
-        }
-    }).subscribe();
+    db.channel('public:orders').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => { if (payload.new.id == orderId) { updateTrackerUI(payload.new.status); if (payload.new.status === 'ready') { try { document.getElementById('audio-ready').play(); } catch(e){} } } }).subscribe();
 }
-
 async function fetchStatus(id) { const { data } = await db.from('orders').select('status').eq('id', id).single(); if (data) updateTrackerUI(data.status); }
 function updateTrackerUI(status) {
     document.querySelectorAll('.status-step').forEach(el => el.className = 'status-step');
-    const step1 = document.getElementById('step-received');
-    const step2 = document.getElementById('step-brewing');
-    const step3 = document.getElementById('step-ready');
-
+    const step1 = document.getElementById('step-received'); const step2 = document.getElementById('step-brewing'); const step3 = document.getElementById('step-ready');
     if (status === 'received') step1.classList.add('active-step');
     else if (status === 'brewing') { step1.classList.add('completed-step'); step2.classList.add('active-step'); }
     else if (status === 'ready' || status === 'completed') {
-        step1.classList.add('completed-step'); step2.classList.add('completed-step');
-        step3.classList.add('active-step'); step3.innerText = "Order Ready! ✅";
-        
-        // --- NEW: TRIGGER REVIEW MODAL ---
-        // Only show if the modal exists in the HTML (it only exists on track.html)
-        const modal = document.getElementById('review-modal');
-        if (modal && !localStorage.getItem(`reviewed_${window.lastOrderId}`)) {
-            setTimeout(() => { modal.style.display = 'flex'; }, 2000); // Wait 2 seconds then pop up
-            // Mark as reviewed so it doesn't pop up forever
-            localStorage.setItem(`reviewed_${window.lastOrderId}`, 'true');
-        }
+        step1.classList.add('completed-step'); step2.classList.add('completed-step'); step3.classList.add('active-step'); step3.innerText = "Order Ready! ✅";
+        const modal = document.getElementById('review-modal'); if (modal && !localStorage.getItem(`reviewed_${window.lastOrderId}`)) { setTimeout(() => { modal.style.display = 'flex'; }, 2000); localStorage.setItem(`reviewed_${window.lastOrderId}`, 'true'); }
     }
 }
