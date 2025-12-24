@@ -2,81 +2,155 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Republic Express</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-    <header>
-        <h1>Republic Express</h1>
-        <p>Moyee Coffee & Creativity</p>
-    </header>
 
-    <div id="category-tabs"></div>
-
-    <main id="menu-container">
-        <p id="status-text">Loading Menu...</p>
-    </main>
-
-    <div id="cart-bar">
-        <span>Total: KES <span id="cart-total">0</span></span>
-        <button onclick="openCheckout()">Checkout</button>
+    <div class="hero">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <h1>Republic <span class="hero-brand">Express</span></h1>
+                <p>Premium coffee, crafted for you.</p>
+            </div>
+            
+            <div class="top-cart-btn" onclick="openCheckout()">
+                <span style="font-size:20px;">🛍️</span>
+                <span id="top-cart-badge" class="badge-pop">0</span>
+            </div>
+        </div>
     </div>
 
-    <div id="checkout-modal">
-        <div class="modal-content">
-            <h2>Confirm Order</h2>
+    <div id="category-tabs">
+        </div>
+
+    <div id="menu-container">
+        <p style="text-align:center; margin-top:50px; color:#999;">Loading Menu...</p>
+    </div>
+
+    <div id="cart-bar" onclick="openCheckout()">
+        <div class="cart-left">
+            <span class="cart-count" id="cart-count-badge">0</span>
+            <span>View Order</span>
+        </div>
+        <div style="font-weight:700;">KES <span id="cart-total">0</span></div>
+    </div>
+
+    <div id="checkout-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:22px;">Your Order</h2>
+                <button onclick="closeCheckout()" style="background:none; border:none; font-size:24px; color:#888;">&times;</button>
+            </div>
+
+            <div id="order-summary" style="max-height: 200px; overflow-y: auto; margin-bottom: 25px;"></div>
             
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <button id="btn-takeaway" class="toggle-btn active" onclick="setOrderType('takeaway')">📦 Takeaway</button>
+            <div style="display:flex; justify-content:space-between; font-weight:700; font-size:18px; margin-bottom:25px; border-top:1px dashed #ddd; padding-top:15px;">
+                <span>Total Amount</span>
+                <span>KES <span id="modal-total">0</span></span>
+            </div>
+
+            <label style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:block;">Service Type</label>
+            <div class="toggle-group">
+                <button id="btn-takeaway" class="toggle-btn active" onclick="setOrderType('takeaway')">🏃 Takeaway</button>
                 <button id="btn-dinein" class="toggle-btn" onclick="setOrderType('dine_in')">🍽️ Dine-In</button>
             </div>
 
-            <label style="font-size:12px; font-weight:bold; color:#666; margin-top:10px; display:block;">Payment Method</label>
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <button id="btn-mpesa" class="toggle-btn active" onclick="setPaymentMethod('mpesa')">📱 M-Pesa</button>
+            <div id="table-input-div" style="display:none;">
+                <input type="number" id="table-number" class="form-input" placeholder="Enter Table Number">
+            </div>
+
+            <label style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:block;">Payment Method</label>
+            <div class="toggle-group">
+                <button id="btn-mpesa" class="toggle-btn active" onclick="setPaymentMethod('mpesa')">📲 M-Pesa</button>
                 <button id="btn-cash" class="toggle-btn" onclick="setPaymentMethod('cash')">💵 Cash</button>
             </div>
-
-            <div id="table-input-div" style="display:none; margin-bottom:15px;">
-                <label style="font-size:12px; font-weight:bold; color:#666;">Table Number</label>
-                <input type="text" id="table-number" placeholder="e.g. 5" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
-            </div>
-
-            <div id="order-summary" style="text-align:left; margin-bottom:15px; color:#555; max-height:150px; overflow-y:auto;"></div>
-            <h3>Total: KES <span id="modal-total">0</span></h3>
             
-            <label style="display:block; text-align:left; margin-top:15px;">M-Pesa Number:</label>
-            <input type="tel" id="phone-input" placeholder="0712 345 678" style="width:100%; padding:10px; margin-top:5px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+            <input type="tel" id="phone-input" class="form-input" placeholder="Phone Number (Required)">
             
-            <button id="pay-btn" onclick="processPayment()" style="background:#25D366; color:white; border:none; padding:12px; width:100%; margin-top:20px; border-radius:5px; font-weight:bold; cursor:pointer;">PAY NOW</button>
-            <button onclick="closeCheckout()" style="background:transparent; color:#777; border:none; margin-top:10px; cursor:pointer; width:100%;">Cancel</button>
+            <button id="pay-btn" onclick="processPayment()" style="width:100%; padding:18px; border-radius:16px; border:none; background:var(--primary); color:white; font-weight:700; font-size:16px; margin-top:10px;">COMPLETE ORDER</button>
         </div>
     </div>
 
-    <div id="receipt-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center;">
-        <div style="background:white; padding:20px; width:320px; text-align:center; border-radius:10px;">
-            <div id="receipt-area" style="padding:10px; border:1px dashed #ccc; margin-bottom:15px;">
-                <h2 style="margin:0; color:#3e2723;">Republic Express</h2>
-                <p style="font-size:12px; color:#888;">Receipt of Payment</p>
-                <hr style="border:0; border-top:1px dashed #eee;">
-                <h1 style="font-size:32px; margin:10px 0;" id="receipt-id">#000</h1>
-                <div id="receipt-items" style="text-align:left; font-size:13px; margin-bottom:10px;"></div>
-                <hr style="border:0; border-top:1px dashed #eee;">
-                <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                    <span>TOTAL</span>
-                    <span id="receipt-total">KES 0</span>
+    <div id="receipt-modal" class="modal-overlay">
+        <div class="modal-box" style="text-align:center;">
+            <div id="receipt-area" style="background:#fffaf0; padding:20px; border:1px dashed #ccc; border-radius:16px; margin-bottom:20px;">
+                <h2 style="color:var(--primary); margin:0;">Republic Express</h2>
+                <p style="font-size:12px; color:#666; text-transform:uppercase; letter-spacing:2px;">Official Receipt</p>
+                <h1 id="receipt-total" style="font-size:36px; color:var(--primary); margin:15px 0;">KES 0</h1>
+                <div id="receipt-items" style="text-align:left; font-size:14px; margin:20px 0; border-top:1px dashed #ccc; border-bottom:1px dashed #ccc; padding:15px 0;"></div>
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:#666; font-weight:600;">
+                    <span id="receipt-id">#000</span>
+                    <span id="receipt-footer">Paid</span>
                 </div>
-                <div id="receipt-footer" style="margin-top:10px; font-size:12px; color:#25D366; font-weight:bold;"></div>
             </div>
-            
-            <button onclick="downloadReceipt()" style="background:#3e2723; color:white; border:none; padding:12px; width:100%; border-radius:5px; font-weight:bold; cursor:pointer; margin-bottom:10px;">📥 Download to Gallery</button>
-            <button onclick="finishOrder()" style="background:#eee; color:#333; border:none; padding:10px; width:100%; border-radius:5px; cursor:pointer;">Track Order</button>
+            <button onclick="finishOrder()" style="width:100%; padding:16px; background:var(--primary); color:white; border:none; border-radius:14px; font-weight:bold;">Track Order →</button>
+            <button onclick="downloadReceipt()" style="width:100%; padding:10px; background:transparent; color:#888; border:none; margin-top:10px; font-size:13px;">Download Image 📥</button>
         </div>
+    </div>
+
+    <div style="text-align:center; padding:20px; opacity:0.3;">
+        <a href="login.html" style="text-decoration:none; color:#999; font-size:12px;">Staff Login</a>
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Override Update Function to update BOTH carts (Top and Bottom)
+        const originalUpdateCart = updateCartIcon;
+        updateCartIcon = function() {
+            const totalEl = document.getElementById('cart-total');
+            const bottomBadge = document.getElementById('cart-count-badge');
+            const topBadge = document.getElementById('top-cart-badge'); // New Top Badge
+            const bar = document.getElementById('cart-bar');
+            
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const count = cart.length;
+            
+            if (totalEl) totalEl.innerText = total.toLocaleString();
+            if (bottomBadge) bottomBadge.innerText = count;
+            if (topBadge) {
+                topBadge.innerText = count;
+                // Animation pop effect
+                topBadge.style.transform = "scale(1.2)";
+                setTimeout(() => topBadge.style.transform = "scale(1)", 200);
+            }
+            
+            // Bottom bar logic
+            if(count > 0) {
+                bar.style.display = 'flex';
+                setTimeout(() => bar.classList.add('visible'), 10);
+            } else {
+                bar.classList.remove('visible');
+            }
+        }
+        
+        const originalOpenCheckout = openCheckout;
+        openCheckout = function() {
+            if (cart.length === 0) return alert("Cart is empty!");
+            const modal = document.getElementById('checkout-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('open'), 10);
+            
+            document.getElementById('modal-total').innerText = cart.reduce((sum, item) => sum + item.price, 0).toLocaleString();
+            document.getElementById('order-summary').innerHTML = cart.map(item => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f5f5f5; padding-bottom:8px;">
+                    <div>
+                        <div style="font-weight:600;">${item.name}</div>
+                        <div style="font-size:12px; color:#999;">${item.details || 'No extras'}</div>
+                    </div>
+                    <div style="font-weight:600;">${item.price}</div>
+                </div>`).join('');
+        }
+
+        const originalCloseCheckout = closeCheckout;
+        closeCheckout = function() {
+            const modal = document.getElementById('checkout-modal');
+            modal.classList.remove('open');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+    </script>
 </body>
 </html>
