@@ -1,7 +1,7 @@
 console.log("🚀 SCRIPT V9 - UI SYNC FIX");
 
-const PROJECT_URL = "https://uveudhkfncwbllczhbhf.supabase.co";
-const PROJECT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2ZXVkaGtmbmN3YmxsY3poYmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NTE5MTksImV4cCI6MjA4MjEyNzkxOX0.30rZbjVgShWxeI5FOD8zGJU-Ho6h6d5s7foEIlQVSZI";
+const PROJECT_URL = "https://yvzlwmvrljyfdwkjgzkk.supabase.co";
+const PROJECT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2emx3bXZybGp5ZmR3a2pnemtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTQ3NjIsImV4cCI6MjA4NTI3MDc2Mn0.y8akYjzX-ViyLNl4yLm_afD9xOW3E2VqExs_dYWQQXo";
 const db = supabase.createClient(PROJECT_URL, PROJECT_KEY);
 
 // STATE
@@ -358,3 +358,4 @@ function closeReview() {
     modal.classList.remove('open');
     setTimeout(() => modal.style.display = 'none', 300);
 }
+
